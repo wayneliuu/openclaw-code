@@ -1,0 +1,83 @@
+{
+  "name": "openclaw-code",
+  "displayName": "OpenClaw Code (OCC)",
+  "description": "OpenClaw AI chat assistant for VSCode/Windsurf",
+  "version": "0.1.0",
+  "publisher": "openclaw",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "AI",
+    "Chat",
+    "Other"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "occ-sidebar",
+          "title": "OpenClaw",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "occ-sidebar": [
+        {
+          "type": "webview",
+          "id": "occ.chatView",
+          "name": "OpenClaw",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "OpenClaw Code",
+      "properties": {
+        "occ.gatewayToken": {
+          "type": "string",
+          "description": "OpenClaw Gateway authentication token"
+        },
+        "occ.gatewayUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:18789",
+          "description": "OpenClaw Gateway URL"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "occ.openChat",
+        "title": "Open Chat",
+        "category": "OpenClaw"
+      },
+      {
+        "command": "occ.clearChat",
+        "title": "Clear Chat",
+        "category": "OpenClaw"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "occ.openChat",
+        "key": "ctrl+shift+o",
+        "mac": "cmd+shift+o"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^18.x",
+    "@types/vscode": "^1.75.0",
+    "@vscode/vsce": "^2.19.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {}
+}
