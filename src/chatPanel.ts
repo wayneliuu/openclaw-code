@@ -103,6 +103,22 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
     this.view?.webview.postMessage({ type: 'clearChat' });
   }
 
+  public insertCodeToInput(code: string, language: string, filePath?: string, startLine?: number, endLine?: number) {
+    if (!this.view) {
+      vscode.window.showErrorMessage('Chat view is not available');
+      return;
+    }
+    
+    this.view.webview.postMessage({ 
+      type: 'insertCode', 
+      code: code,
+      language: language,
+      filePath: filePath,
+      startLine: startLine,
+      endLine: endLine
+    });
+  }
+
   private getHtmlContent(webview: vscode.Webview): string {
     const scriptUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.extensionUri, 'out', 'webview', 'main.js')

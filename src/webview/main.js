@@ -108,6 +108,26 @@
       case 'clearChat':
         messagesDiv.innerHTML = '';
         break;
+
+      case 'insertCode':
+        let contextText = '';
+        
+        // 添加文件路径和行号信息
+        if (message.filePath) {
+          const lineInfo = message.startLine === message.endLine 
+            ? `:${message.startLine}` 
+            : `:${message.startLine}-${message.endLine}`;
+          contextText = `From \`${message.filePath}${lineInfo}\`:\n\n`;
+        }
+        
+        const codeBlock = '```' + message.language + '\n' + message.code + '\n```\n';
+        const currentValue = input.value;
+        const newContent = currentValue + (currentValue ? '\n' : '') + contextText + codeBlock;
+        input.value = newContent;
+        autoResizeInput();
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+        break;
     }
   });
 

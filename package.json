@@ -57,19 +57,31 @@
         "command": "occ.clearChat",
         "title": "Clear Chat",
         "category": "OpenClaw"
+      },
+      {
+        "command": "occ.insertSelectedCode",
+        "title": "Insert Selected Code to Chat",
+        "category": "OpenClaw"
       }
     ],
     "keybindings": [
       {
         "command": "occ.openChat",
-        "key": "ctrl+shift+o",
-        "mac": "cmd+shift+o"
+        "key": "ctrl+shift+l",
+        "mac": "cmd+shift+l"
+      },
+      {
+        "command": "occ.insertSelectedCode",
+        "key": "ctrl+shift+k",
+        "mac": "cmd+shift+k",
+        "when": "editorHasSelection"
       }
     ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
+    "compile": "tsc -p ./ && npm run copy-webview",
+    "copy-webview": "cp src/webview/*.js src/webview/*.css out/webview/ 2>/dev/null || true",
     "watch": "tsc -watch -p ./",
     "package": "vsce package"
   },
