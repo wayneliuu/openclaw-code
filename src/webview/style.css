@@ -206,3 +206,111 @@ button.send-icon svg {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--vscode-scrollbarSlider-activeBackground);
 }
+
+/* 可点击的代码块 */
+.clickable-code {
+  cursor: pointer;
+  transition: background-color 0.2s, box-shadow 0.2s;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.clickable-code:hover {
+  background-color: rgba(255, 255, 255, 0.015) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+}
+
+.clickable-code:focus,
+.clickable-code:focus-visible,
+.clickable-code:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.searchable-code {
+  cursor: pointer;
+  transition: background-color 0.2s, box-shadow 0.2s;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.searchable-code:hover {
+  background-color: rgba(255, 255, 255, 0.015) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+}
+
+.searchable-code:focus,
+.searchable-code:focus-visible,
+.searchable-code:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* 可点击的文件路径 */
+.file-path-link {
+  color: var(--vscode-textLink-foreground);
+  cursor: pointer;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-bottom-color 0.2s;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.file-path-link:hover {
+  border-bottom-color: var(--vscode-textLink-foreground);
+}
+
+.file-path-link:focus,
+.file-path-link:focus-visible,
+.file-path-link:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* 文件名链接样式 */
+code.file-link {
+  color: var(--vscode-textLink-foreground);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  transition: background-color 0.2s, text-decoration-color 0.2s;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+code.file-link:hover {
+  text-decoration-style: solid;
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+code.file-link:focus,
+code.file-link:focus-visible,
+code.file-link:active {
+  outline: none !important;
+  box-shadow: none !important;
+  background-color: transparent;
+}
+
+code.symbol-link {
+  color: var(--vscode-textLink-foreground);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  transition: background-color 0.2s, text-decoration-color 0.2s;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+code.symbol-link:hover {
+  text-decoration-style: solid;
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+code.symbol-link:focus,
+code.symbol-link:focus-visible,
+code.symbol-link:active {
+  outline: none !important;
+  box-shadow: none !important;
+  background-color: transparent;
+}

@@ -39,6 +39,13 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
           break;
         case 'ready':
           this.sendWorkspaceInfo();
+          await this.sendFileList();
+          break;
+        case 'openFile':
+          await this.handleOpenFile(message.filePath, message.startLine, message.endLine);
+          break;
+        case 'searchInProject':
+          await this.searchInProject(message.query);
           break;
       }
     });
@@ -58,6 +65,111 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
       });
     }
     // 正常情况下不发送任何消息，保持简洁
+  }
+
+  private async sendFileList() {
+    if (!this.view) {
+      return;
+    }
+
+    try {
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+      if (!workspaceFolder) {
+        return;
+      }
+
+      // 获取项目文件列表，排除 node_modules 等
+      const files = await vscode.workspace.findFiles(
+        '**/*',
+        '{**/node_modules/**,**/out/**,**/.git/**,**/dist/**,**/.vscode/**}'
+      );
+
+      const relativePaths = files.map(uri => 
+        vscode.workspace.asRelativePath(uri)
+      );
+
+      this.view.webview.postMessage({
+        type: 'fileList',
+        files: relativePaths
+      });
+    } catch (error) {
+      console.error('Failed to get file list:', error);
+    }
+  }
+
+  private async handleOpenFile(filePath: string, startLine?: number, endLine?: number) {
+    try {
+      // 解析文件路径（可能是相对路径或绝对路径）
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+      let fileUri: vscode.Uri;
+      
+      if (path.isAbsolute(filePath)) {
+        fileUri = vscode.Uri.file(filePath);
+      } else if (workspaceFolder) {
+        fileUri = vscode.Uri.joinPath(workspaceFolder.uri, filePath);
+      } else {
+        throw new Error('Cannot resolve file path: no workspace folder');
+      }
+      
+      // 打开文档
+      const document = await vscode.workspace.openTextDocument(fileUri);
+      const editor = await vscode.window.showTextDocument(document);
+      
+      // 跳转到指定行
+      if (startLine !== undefined) {
+        const line = startLine - 1; // 转为 0-based
+        const endLineNum = endLine ? endLine - 1 : line;
+        const range = new vscode.Range(line, 0, endLineNum, document.lineAt(Math.min(endLineNum, document.lineCount - 1)).text.length);
+        
+        editor.selection = new vscode.Selection(range.start, range.end);
+        editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Failed to open file: ${errorMessage}`);
+    }
+  }
+
+  private async searchInProject(query: string) {
+    const trimmedQuery = query?.trim();
+    if (!trimmedQuery) {
+      return;
+    }
+
+    const files = await vscode.workspace.findFiles(
+      '**/*',
+      '{**/node_modules/**,**/out/**,**/.git/**,**/dist/**,**/.vscode/**}'
+    );
+
+    const lowerQuery = trimmedQuery.toLowerCase();
+    let matchedUri: vscode.Uri | undefined;
+    let matchedRange: vscode.Range | undefined;
+
+    for (const file of files) {
+      const document = await vscode.workspace.openTextDocument(file);
+      const content = document.getText();
+      const matchIndex = content.toLowerCase().indexOf(lowerQuery);
+
+      if (matchIndex === -1) {
+        continue;
+      }
+
+      const start = document.positionAt(matchIndex);
+      const end = document.positionAt(matchIndex + trimmedQuery.length);
+      matchedUri = file;
+      matchedRange = new vscode.Range(start, end);
+      break;
+    }
+
+    if (!matchedUri || !matchedRange) {
+      vscode.window.showInformationMessage(`No project result found for: ${trimmedQuery}`);
+      return;
+    }
+
+    const document = await vscode.workspace.openTextDocument(matchedUri);
+    const editor = await vscode.window.showTextDocument(document);
+    editor.selection = new vscode.Selection(matchedRange.start, matchedRange.end);
+    editor.revealRange(matchedRange, vscode.TextEditorRevealType.InCenter);
   }
 
   private async handleSendMessage(text: string) {
