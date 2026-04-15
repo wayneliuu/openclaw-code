@@ -123,16 +123,22 @@ body {
   background-color: var(--vscode-editor-background);
 }
 
+#input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+}
+
 #input {
-  width: 100%;
+  flex: 1;
   min-height: 60px;
   max-height: 300px;
   height: 60px;
-  padding: 8px;
+  padding: 8px 48px 8px 12px;
   background-color: var(--vscode-input-background);
   color: var(--vscode-input-foreground);
   border: 1px solid var(--vscode-input-border);
-  border-radius: 4px;
+  border-radius: 8px;
   resize: none;
   overflow-y: auto;
   font-family: var(--vscode-font-family);
@@ -146,49 +152,42 @@ body {
   border-color: var(--vscode-focusBorder);
 }
 
-#button-row {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-button {
-  padding: 6px 14px;
+button.send-icon {
+  position: absolute;
+  right: 8px;
+  bottom: 12px;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
   background-color: var(--vscode-button-background);
   color: var(--vscode-button-foreground);
   border: none;
-  border-radius: 4px;
+  border-radius: 50%;
   cursor: pointer;
-  font-family: var(--vscode-font-family);
-  font-size: var(--vscode-font-size);
-  transition: background-color 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
 }
 
-button:hover {
+button.send-icon:hover:not(:disabled) {
   background-color: var(--vscode-button-hoverBackground);
+  transform: scale(1.05);
 }
 
-button:active {
-  opacity: 0.9;
+button.send-icon:active:not(:disabled) {
+  transform: scale(0.95);
 }
 
-button:disabled {
-  opacity: 0.5;
+button.send-icon:disabled {
   cursor: not-allowed;
+  opacity: 0.5;
 }
 
-button.primary {
-  background-color: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-}
-
-#clear {
-  background-color: var(--vscode-button-secondaryBackground);
-  color: var(--vscode-button-secondaryForeground);
-}
-
-#clear:hover {
-  background-color: var(--vscode-button-secondaryHoverBackground);
+button.send-icon svg {
+  display: block;
 }
 
 ::-webkit-scrollbar {

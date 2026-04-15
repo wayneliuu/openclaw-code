@@ -143,10 +143,15 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
   <div id="chat-container">
     <div id="messages"></div>
     <div id="input-container">
-      <textarea id="input" placeholder="Ask OpenClaw... (Enter to send, Shift+Enter for new line, drag code here)" rows="3"></textarea>
-      <div id="button-row">
-        <button id="send" class="primary">Send</button>
-        <button id="clear">Clear</button>
+      <div id="input-wrapper">
+        <textarea id="input" placeholder="Ask OpenClaw... (Enter to send, Shift+Enter for new line, drag code here)" rows="3"></textarea>
+        <button id="send" class="send-icon" title="Send message">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 16 12 8"></polyline>
+            <polyline points="8 12 12 8 16 12"></polyline>
+          </svg>
+        </button>
       </div>
     </div>
   </div>

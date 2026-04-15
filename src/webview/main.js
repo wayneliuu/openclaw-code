@@ -4,7 +4,6 @@
   const messagesDiv = document.getElementById('messages');
   const input = document.getElementById('input');
   const sendBtn = document.getElementById('send');
-  const clearBtn = document.getElementById('clear');
 
   let currentMessage = '';
   let isResponding = false;
@@ -19,7 +18,6 @@
   input.addEventListener('input', autoResizeInput);
   
   sendBtn.addEventListener('click', sendMessage);
-  clearBtn.addEventListener('click', clearChat);
 
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -69,13 +67,6 @@
     vscode.postMessage({ type: 'sendMessage', text });
   }
 
-  function clearChat() {
-    if (confirm('Clear all messages?')) {
-      messagesDiv.innerHTML = '';
-      vscode.postMessage({ type: 'clearChat' });
-    }
-  }
-
   window.addEventListener('message', (event) => {
     const message = event.data;
     
@@ -84,7 +75,7 @@
         isResponding = true;
         currentMessage = '';
         sendBtn.disabled = true;
-        sendBtn.textContent = 'Sending...';
+        sendBtn.style.opacity = '0.5';
         break;
 
       case 'chunk':
@@ -95,13 +86,13 @@
       case 'endResponse':
         isResponding = false;
         sendBtn.disabled = false;
-        sendBtn.textContent = 'Send';
+        sendBtn.style.opacity = '1';
         break;
 
       case 'error':
         isResponding = false;
         sendBtn.disabled = false;
-        sendBtn.textContent = 'Send';
+        sendBtn.style.opacity = '1';
         addMessage('error', `Error: ${message.data}`);
         break;
 
