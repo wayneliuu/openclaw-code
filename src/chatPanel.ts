@@ -37,8 +37,27 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
         case 'clearChat':
           webviewView.webview.postMessage({ type: 'clearChat' });
           break;
+        case 'ready':
+          this.sendWorkspaceInfo();
+          break;
       }
     });
+  }
+
+  private sendWorkspaceInfo() {
+    if (!this.view) {
+      return;
+    }
+
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders || workspaceFolders.length === 0) {
+      // 只在没有工作区时显示错误
+      this.view.webview.postMessage({
+        type: 'error',
+        data: 'No workspace folder opened'
+      });
+    }
+    // 正常情况下不发送任何消息，保持简洁
   }
 
   private async handleSendMessage(text: string) {

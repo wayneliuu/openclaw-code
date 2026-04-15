@@ -8,6 +8,9 @@
   let currentMessage = '';
   let isResponding = false;
 
+  // 通知后端 webview 已准备好
+  vscode.postMessage({ type: 'ready' });
+
   // 自动调整输入框高度
   function autoResizeInput() {
     input.style.height = 'auto';
@@ -118,6 +121,10 @@
         autoResizeInput();
         input.focus();
         input.setSelectionRange(input.value.length, input.value.length);
+        break;
+
+      case 'workspaceInfo':
+        // 正常加载时不显示任何消息，保持简洁
         break;
     }
   });
