@@ -1,17 +1,28 @@
+html {
+  height: 100%;
+  overflow: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
 body {
   padding: 0;
   margin: 0;
+  height: 100%;
   color: var(--vscode-foreground);
   background-color: var(--vscode-editor-background);
   font-family: var(--vscode-font-family);
   font-size: var(--vscode-font-size);
   overflow: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 #chat-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
+  overflow: hidden;
 }
 
 #messages {
@@ -19,6 +30,13 @@ body {
   overflow-y: auto;
   padding: 12px;
   padding-bottom: 20px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+#messages::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .message {
@@ -56,6 +74,8 @@ body {
   border-radius: 4px;
   overflow-x: auto;
   margin: 8px 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .message code {
@@ -145,11 +165,18 @@ body {
   font-size: var(--vscode-font-size);
   box-sizing: border-box;
   transition: height 0.1s ease;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 #input:focus {
   outline: 1px solid var(--vscode-focusBorder);
   border-color: var(--vscode-focusBorder);
+}
+
+#input::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 button.send-icon {
@@ -190,34 +217,35 @@ button.send-icon svg {
   display: block;
 }
 
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+#chat-container::-webkit-scrollbar,
+#messages::-webkit-scrollbar,
+#input::-webkit-scrollbar,
+.message pre::-webkit-scrollbar,
 ::-webkit-scrollbar {
-  width: 10px;
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--vscode-scrollbarSlider-background);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--vscode-scrollbarSlider-hoverBackground);
-  border-radius: 5px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--vscode-scrollbarSlider-activeBackground);
+  background: transparent;
 }
 
 /* 可点击的代码块 */
 .clickable-code {
   cursor: pointer;
-  transition: background-color 0.2s, box-shadow 0.2s;
   outline: none;
   -webkit-tap-highlight-color: transparent;
-}
-
-.clickable-code:hover {
-  background-color: rgba(255, 255, 255, 0.015) !important;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.035);
 }
 
 .clickable-code:focus,
@@ -229,14 +257,8 @@ button.send-icon svg {
 
 .searchable-code {
   cursor: pointer;
-  transition: background-color 0.2s, box-shadow 0.2s;
   outline: none;
   -webkit-tap-highlight-color: transparent;
-}
-
-.searchable-code:hover {
-  background-color: rgba(255, 255, 255, 0.015) !important;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.035);
 }
 
 .searchable-code:focus,
@@ -272,16 +294,9 @@ button.send-icon svg {
 code.file-link {
   color: var(--vscode-textLink-foreground);
   cursor: pointer;
-  text-decoration: underline;
-  text-decoration-style: dotted;
-  transition: background-color 0.2s, text-decoration-color 0.2s;
+  text-decoration: none;
   outline: none;
   -webkit-tap-highlight-color: transparent;
-}
-
-code.file-link:hover {
-  text-decoration-style: solid;
-  background-color: rgba(255, 255, 255, 0.02);
 }
 
 code.file-link:focus,
@@ -295,16 +310,9 @@ code.file-link:active {
 code.symbol-link {
   color: var(--vscode-textLink-foreground);
   cursor: pointer;
-  text-decoration: underline;
-  text-decoration-style: dotted;
-  transition: background-color 0.2s, text-decoration-color 0.2s;
+  text-decoration: none;
   outline: none;
   -webkit-tap-highlight-color: transparent;
-}
-
-code.symbol-link:hover {
-  text-decoration-style: solid;
-  background-color: rgba(255, 255, 255, 0.02);
 }
 
 code.symbol-link:focus,
