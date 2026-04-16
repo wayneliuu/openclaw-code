@@ -4,3 +4,6 @@ out/
 *.log
 .vscode-test/
 .DS_Store
+
+# OpenClaw
+memory/

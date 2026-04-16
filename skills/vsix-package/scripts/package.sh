@@ -1,0 +1,76 @@
+#!/bin/bash
+# vsix-package 打包脚本
+# 工作目录：/Users/lw/ai/openclaw-code
+
+set -e
+
+WORKDIR="/Users/lw/ai/openclaw-code"
+VERSION_FILE="$WORKDIR/.version"
+PKG_NAME="openclaw-code"
+
+cd "$WORKDIR"
+
+# 检查 version 文件
+if [ ! -f "$VERSION_FILE" ]; then
+    echo "📝 未找到版本文件，创建初始版本 0.1.0"
+    echo "0.1.0" > "$VERSION_FILE"
+fi
+
+# 读取当前版本
+CURRENT_VERSION=$(cat "$VERSION_FILE" | tr -d '\n\r ')
+echo "📌 当前版本: $CURRENT_VERSION"
+
+# 解析版本号
+IFS='.' read -ra VER <<< "$CURRENT_VERSION"
+MAJOR="${VER[0]}"
+MINOR="${VER[1]}"
+PATCH="${VER[2]}"
+
+# 处理大版本升级指令（如 "升级到 0.2" 或 "升级到 1.0"）
+UPGRADE_TO=""
+if [[ "$1" == *升级* ]]; then
+    UPGRADE_TO=$(echo "$1" | sed 's/升级到//' | tr -d ' ')
+fi
+
+if [ -n "$UPGRADE_TO" ]; then
+    echo "🔝 检测到大版本升级指令: $UPGRADE_TO"
+    IFS='.' read -ra TARGET_VER <<< "$UPGRADE_TO"
+    MAJOR="${TARGET_VER[0]}"
+    MINOR="${TARGET_VER[1]:-0}"
+    PATCH="0"
+    NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+else
+    # 默认递增 patch 版本
+    PATCH=$((PATCH + 1))
+    NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+fi
+
+# 更新版本文件
+echo "$NEW_VERSION" > "$VERSION_FILE"
+echo "✅ 版本已更新: $CURRENT_VERSION → $NEW_VERSION"
+
+# 确保 vsce 可用（通过 npx 或直接路径）
+VSCMD="$(pwd)/node_modules/.bin/vsce"
+if [ ! -x "$VSCMD" ]; then
+    VSCMD="vsce"
+fi
+
+# 执行打包
+echo "📦 开始打包..."
+OUTPUT_FILE="${PKG_NAME}-${NEW_VERSION}.vsix"
+
+# 清理旧包
+rm -f "$WORKDIR"/*.vsix
+
+"$VSCMD" package -o "$OUTPUT_FILE"
+
+if [ -f "$WORKDIR/$OUTPUT_FILE" ]; then
+    SIZE=$(ls -lh "$WORKDIR/$OUTPUT_FILE" | awk '{print $5}')
+    echo ""
+    echo "🎉 打包完成！"
+    echo "   文件: $OUTPUT_FILE"
+    echo "   大小: $SIZE"
+else
+    echo "❌ 打包失败"
+    exit 1
+fi
