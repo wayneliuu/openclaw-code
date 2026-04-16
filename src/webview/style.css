@@ -138,8 +138,8 @@ body {
 }
 
 #input-container {
-  border-top: 1px solid var(--vscode-panel-border);
-  padding: 12px;
+  border-top: none;
+  padding: 8px;
   background-color: var(--vscode-editor-background);
 }
 
@@ -158,6 +158,7 @@ body {
   background-color: var(--vscode-input-background);
   color: var(--vscode-input-foreground);
   border: 1px solid var(--vscode-input-border);
+  border-top-color: transparent;
   border-radius: 8px;
   resize: none;
   overflow-y: auto;
@@ -170,8 +171,9 @@ body {
 }
 
 #input:focus {
-  outline: 1px solid var(--vscode-focusBorder);
+  outline: none;
   border-color: var(--vscode-focusBorder);
+  border-top-color: transparent;
 }
 
 #input::-webkit-scrollbar {
