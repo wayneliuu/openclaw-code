@@ -2,7 +2,7 @@
   "name": "openclaw-code",
   "displayName": "OpenClaw Code (OCC)",
   "description": "OpenClaw AI chat assistant for VSCode/Windsurf",
-  "version": "0.1.0",
+  "version": "0.1.3",
   "publisher": "openclaw",
   "repository": {
     "type": "git",

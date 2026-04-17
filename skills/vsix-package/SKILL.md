@@ -4,9 +4,10 @@
 
 ## 版本号规则
 
+- **唯一版本来源**：`package.json` 的 `version` 字段
 - **默认行为**：每次打包自动递增 patch 版本（0.1.0 → 0.1.1 → 0.1.2...）
 - **大版本升级**：只有明确说"升级到 0.2"或"升级到 1.0"时才升级对应主版本或次版本
-- 版本号保存在工作目录的 `.version` 文件中
+- ❌ 不再使用 `.version` 文件，避免版本号不一致
 
 ## 触发方式
 
@@ -14,12 +15,11 @@
 
 ## 执行流程
 
-1. 检查 `.version` 文件是否存在，不存在则创建为 `0.1.0`
-2. 读取当前版本号
-3. 递增 patch 版本（或按指令升级大版本）
-4. 更新 `.version` 文件
-5. 执行 `vsce package` 打包
-6. 输出文件名格式：`openclaw-code-{version}.vsix`
+1. 读取 `package.json` 中的 `version` 字段
+2. 递增 patch 版本（或按指令升级大版本）
+3. **同步更新 `package.json`** 中的 `version` 字段
+4. 执行 `vsce package` 打包
+5. 输出文件名格式：`openclaw-code-{version}.vsix`
 
 ## 使用方式
 
