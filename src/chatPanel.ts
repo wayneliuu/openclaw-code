@@ -495,7 +495,7 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
     <div id="messages"></div>
     <div id="input-container">
       <div id="input-wrapper">
-        <textarea id="input" placeholder="Ask OpenClaw... (Enter to send, Shift+Enter for new line, drag code here)" rows="3"></textarea>
+        <textarea id="input" placeholder="Ask OpenClaw Anything..." rows="3"></textarea>
         <button id="send" class="send-icon" title="Send message">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"></circle>
