@@ -415,7 +415,7 @@
     sessions.forEach(session => {
       const option = document.createElement('option');
       option.value = session.id;
-      option.textContent = `${session.name} (${session.messageCount})`;
+      option.textContent = session.name;
       if (session.id === activeSessionId) {
         option.selected = true;
       }
