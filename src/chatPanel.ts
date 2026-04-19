@@ -1,11 +1,12 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { OpenClawClient } from './openclawClient';
+import { SessionManager, ChatMessage, Session } from './sessionManager';
 
 export class ChatPanelProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
   private client: OpenClawClient;
-  private conversationHistory: Array<{ role: 'user' | 'assistant' | 'system'; content: string }> = [];
+  private sessionManager?: SessionManager;
 
   constructor(private readonly extensionUri: vscode.Uri) {
     const config = vscode.workspace.getConfiguration('occ');
@@ -29,6 +30,12 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
 
     webviewView.webview.html = this.getHtmlContent(webviewView.webview);
 
+    webviewView.onDidChangeVisibility(() => {
+      if (webviewView.visible) {
+        void this.syncWebviewState();
+      }
+    });
+
     webviewView.webview.onDidReceiveMessage(async (message) => {
       switch (message.type) {
         case 'sendMessage':
@@ -38,8 +45,7 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
           webviewView.webview.postMessage({ type: 'clearChat' });
           break;
         case 'ready':
-          this.sendWorkspaceInfo();
-          await this.sendFileList();
+          await this.syncWebviewState();
           break;
         case 'openFile':
           await this.handleOpenFile(message.filePath, message.startLine, message.endLine);
@@ -47,8 +53,212 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
         case 'searchInProject':
           await this.searchInProject(message.query);
           break;
+        case 'createSession':
+          this.handleCreateSession(message.name);
+          break;
+        case 'switchSession':
+          this.handleSwitchSession(message.sessionId);
+          break;
+        case 'deleteSession':
+          await this.handleDeleteSession(message.sessionId);
+          break;
+        case 'renameSession':
+          this.handleRenameSession(message.sessionId, message.name);
+          break;
+        case 'requestRenameSession':
+          await this.handleRenameSessionRequest(message.sessionId);
+          break;
+        case 'getSessions':
+          this.sendSessionList();
+          break;
       }
     });
+
+    this.initializeSessionManager();
+  }
+
+  private initializeSessionManager() {
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    if (!workspaceFolder) {
+      return;
+    }
+
+    this.sessionManager = new SessionManager(workspaceFolder.uri.fsPath);
+  }
+
+  private async syncWebviewState() {
+    this.sendWorkspaceInfo();
+    await this.sendFileList();
+    this.sendSessionList();
+    this.loadCurrentSession();
+  }
+
+  private sendSessionList() {
+    if (!this.view || !this.sessionManager) {
+      return;
+    }
+
+    const sessions = this.sessionManager.getAllSessions();
+    const activeSessionId = this.sessionManager.getActiveSessionId();
+
+    this.view.webview.postMessage({
+      type: 'sessionList',
+      sessions: sessions.map(s => ({
+        id: s.id,
+        name: s.name,
+        messageCount: s.messages.length,
+        lastUsedAt: s.lastUsedAt
+      })),
+      activeSessionId
+    });
+  }
+
+  private loadCurrentSession() {
+    if (!this.view || !this.sessionManager) {
+      return;
+    }
+
+    const session = this.sessionManager.getActiveSession();
+    if (!session) {
+      return;
+    }
+
+    this.view.webview.postMessage({
+      type: 'loadSessionMessages',
+      messages: session.messages
+    });
+  }
+
+  private handleCreateSession(name?: string) {
+    if (!this.sessionManager) {
+      return;
+    }
+
+    const newSession = this.sessionManager.createSession(name);
+    this.sendSessionList();
+    this.loadCurrentSession();
+
+    this.view?.webview.postMessage({
+      type: 'sessionCreated',
+      session: {
+        id: newSession.id,
+        name: newSession.name
+      }
+    });
+  }
+
+  private getSessionById(sessionId: string): Session | undefined {
+    if (!this.sessionManager) {
+      return undefined;
+    }
+
+    return this.sessionManager.getSession(sessionId);
+  }
+
+  private handleSwitchSession(sessionId: string) {
+    if (!this.sessionManager) {
+      return;
+    }
+
+    const session = this.sessionManager.switchSession(sessionId);
+    if (session) {
+      this.sendSessionList();
+      this.loadCurrentSession();
+
+      this.view?.webview.postMessage({
+        type: 'sessionSwitched',
+        sessionId: session.id
+      });
+    }
+  }
+
+  private async handleDeleteSession(sessionId: string) {
+    if (!this.sessionManager) {
+      return;
+    }
+
+    const session = this.getSessionById(sessionId);
+    if (!session) {
+      return;
+    }
+
+    const confirmed = await vscode.window.showWarningMessage(
+      `Delete session "${session.name}"?`,
+      { modal: true },
+      'Delete'
+    );
+
+    if (confirmed !== 'Delete') {
+      return;
+    }
+
+    const success = this.sessionManager.deleteSession(sessionId);
+    if (success) {
+      this.sendSessionList();
+      this.loadCurrentSession();
+
+      this.view?.webview.postMessage({
+        type: 'sessionDeleted',
+        sessionId
+      });
+    }
+  }
+
+  private async handleRenameSessionRequest(sessionId: string) {
+    if (!this.sessionManager) {
+      return;
+    }
+
+    const session = this.getSessionById(sessionId);
+    if (!session) {
+      return;
+    }
+
+    const nextName = await vscode.window.showInputBox({
+      prompt: 'Rename session',
+      value: session.name,
+      valueSelection: [0, session.name.length],
+      ignoreFocusOut: true,
+      validateInput: (value) => value.trim() ? undefined : 'Session name cannot be empty'
+    });
+
+    if (nextName === undefined) {
+      return;
+    }
+
+    this.handleRenameSession(sessionId, nextName);
+  }
+
+  private handleRenameSession(sessionId: string, newName: string) {
+    if (!this.sessionManager) {
+      return;
+    }
+
+    const success = this.sessionManager.renameSession(sessionId, newName);
+    if (success) {
+      this.sendSessionList();
+    }
+  }
+
+  private getCurrentMessages(): ChatMessage[] {
+    if (!this.sessionManager) {
+      return [];
+    }
+
+    const session = this.sessionManager.getActiveSession();
+    return session ? session.messages : [];
+  }
+
+  private updateCurrentMessages(messages: ChatMessage[]) {
+    if (!this.sessionManager) {
+      return;
+    }
+
+    const sessionId = this.sessionManager.getActiveSessionId();
+    const titleChanged = this.sessionManager.updateSessionMessages(sessionId, messages);
+    if (titleChanged) {
+      this.sendSessionList();
+    }
   }
 
   private sendWorkspaceInfo() {
@@ -189,8 +399,9 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
       fullMessage = `${text}\n\n\`\`\`${language}\n${selection}\n\`\`\``;
     }
 
-    // 添加用户消息到历史
-    this.conversationHistory.push({ role: 'user', content: fullMessage });
+    const conversationHistory = this.getCurrentMessages();
+    conversationHistory.push({ role: 'user', content: fullMessage });
+    this.updateCurrentMessages(conversationHistory);
 
     this.view.webview.postMessage({ type: 'startResponse' });
 
@@ -198,7 +409,7 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
 
     try {
       await this.client.sendMessageWithHistory(
-        this.conversationHistory,
+        conversationHistory,
         token,
         (chunk: string) => {
           assistantMessage += chunk;
@@ -213,9 +424,9 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
         }
       );
 
-      // 添加助手回复到历史
       if (assistantMessage) {
-        this.conversationHistory.push({ role: 'assistant', content: assistantMessage });
+        conversationHistory.push({ role: 'assistant', content: assistantMessage });
+        this.updateCurrentMessages(conversationHistory);
       }
 
       this.view.webview.postMessage({ type: 'endResponse' });
@@ -230,7 +441,10 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
   }
 
   public clearChat() {
-    this.conversationHistory = [];
+    if (this.sessionManager) {
+      const sessionId = this.sessionManager.getActiveSessionId();
+      this.sessionManager.clearSessionMessages(sessionId);
+    }
     this.view?.webview.postMessage({ type: 'clearChat' });
   }
 
@@ -272,6 +486,12 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
 </head>
 <body>
   <div id="chat-container">
+    <div id="session-bar">
+      <select id="session-select"></select>
+      <button id="new-session" title="New Session">+</button>
+      <button id="rename-session" title="Rename Session">✎</button>
+      <button id="delete-session" title="Delete Session">×</button>
+    </div>
     <div id="messages"></div>
     <div id="input-container">
       <div id="input-wrapper">

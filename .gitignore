@@ -7,3 +7,4 @@ out/
 
 # OpenClaw
 memory/
+.openclaw/sessions.json

@@ -5,13 +5,17 @@
   const messagesDiv = document.getElementById('messages');
   const input = document.getElementById('input');
   const sendBtn = document.getElementById('send');
+  const sessionSelect = document.getElementById('session-select');
+  const newSessionBtn = document.getElementById('new-session');
+  const renameSessionBtn = document.getElementById('rename-session');
+  const deleteSessionBtn = document.getElementById('delete-session');
 
   let currentMessage = '';
   let isResponding = false;
   let projectFiles = [];
   let fileIndex = new Map();
-
-  vscode.postMessage({ type: 'ready' });
+  let sessions = [];
+  let activeSessionId = '';
 
   function autoResizeInput() {
     input.style.height = 'auto';
@@ -235,6 +239,10 @@
     vscode.postMessage({ type: 'sendMessage', text });
   }
 
+  function getSelectedSessionId() {
+    return sessionSelect.value || activeSessionId;
+  }
+
   input.addEventListener('input', autoResizeInput);
   sendBtn.addEventListener('click', sendMessage);
   messagesDiv.addEventListener('click', handleMessageClick);
@@ -244,6 +252,35 @@
       e.preventDefault();
       sendMessage();
     }
+  });
+
+  sessionSelect.addEventListener('change', (e) => {
+    const sessionId = e.target.value;
+    if (sessionId && sessionId !== activeSessionId) {
+      vscode.postMessage({ type: 'switchSession', sessionId });
+    }
+  });
+
+  newSessionBtn.addEventListener('click', () => {
+    vscode.postMessage({ type: 'createSession' });
+  });
+
+  renameSessionBtn.addEventListener('click', () => {
+    const sessionId = getSelectedSessionId();
+    if (!sessionId) {
+      return;
+    }
+
+    vscode.postMessage({ type: 'requestRenameSession', sessionId });
+  });
+
+  deleteSessionBtn.addEventListener('click', () => {
+    const sessionId = getSelectedSessionId();
+    if (!sessionId) {
+      return;
+    }
+
+    vscode.postMessage({ type: 'deleteSession', sessionId });
   });
 
   input.addEventListener('dragover', (e) => {
@@ -333,13 +370,70 @@
         buildFileIndex();
         document.querySelectorAll('.message').forEach(msg => enhanceRenderedMessage(msg));
         break;
+
+      case 'sessionList':
+        sessions = message.sessions || [];
+        activeSessionId = message.activeSessionId;
+        updateSessionSelect();
+        break;
+
+      case 'loadSessionMessages':
+        messagesDiv.innerHTML = '';
+        const messages = message.messages || [];
+        messages.forEach(msg => {
+          if (msg.role === 'user') {
+            addMessage('user', msg.content);
+          } else if (msg.role === 'assistant') {
+            addMessage('assistant', msg.content);
+          }
+        });
+        break;
+
+      case 'sessionCreated':
+      case 'sessionSwitched':
+      case 'sessionDeleted':
+        break;
     }
   });
+
+  function updateSessionSelect() {
+    sessionSelect.innerHTML = '';
+
+    if (sessions.length === 0) {
+      const option = document.createElement('option');
+      option.value = '';
+      option.textContent = 'No sessions';
+      option.selected = true;
+      sessionSelect.appendChild(option);
+      sessionSelect.disabled = true;
+      renameSessionBtn.disabled = true;
+      deleteSessionBtn.disabled = true;
+      return;
+    }
+
+    sessionSelect.disabled = false;
+    sessions.forEach(session => {
+      const option = document.createElement('option');
+      option.value = session.id;
+      option.textContent = `${session.name} (${session.messageCount})`;
+      if (session.id === activeSessionId) {
+        option.selected = true;
+      }
+      sessionSelect.appendChild(option);
+    });
+
+    renameSessionBtn.disabled = !activeSessionId;
+    deleteSessionBtn.disabled = sessions.length <= 1 || !activeSessionId;
+  }
 
   function addMessage(role, content) {
     const div = document.createElement('div');
     div.className = `message ${role}`;
-    div.innerHTML = marked.parse(content);
+    if (typeof marked !== 'undefined' && marked.parse) {
+      div.innerHTML = marked.parse(content);
+    } else {
+      div.textContent = content;
+    }
     enhanceRenderedMessage(div);
     messagesDiv.appendChild(div);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -358,4 +452,6 @@
     enhanceRenderedMessage(lastMsg);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   }
+
+  vscode.postMessage({ type: 'ready' });
 })();

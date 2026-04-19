@@ -1,0 +1,31 @@
+# Source files (already compiled to out/)
+src/**
+tsconfig.json
+
+# Dev/agent workspace files (not needed in extension)
+AGENTS.md
+BOOTSTRAP.md
+DREAMS.md
+HEARTBEAT.md
+IDENTITY.md
+MEMORY.md
+SOUL.md
+TOOLS.md
+USER.md
+INSTALL.md
+memory/**
+skills/**
+
+# Build artifacts
+*.vsix
+package-lock.json
+
+# Git
+.git
+.gitignore
+
+# Agent workspace
+.openclaw
+
+# Compiled JS map files (optional, remove to keep for debugging)
+out/**/*.js.map

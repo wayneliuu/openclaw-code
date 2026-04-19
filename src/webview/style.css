@@ -25,6 +25,63 @@ body {
   overflow: hidden;
 }
 
+#session-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  background-color: var(--vscode-editor-background);
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+#session-select {
+  flex: 1;
+  padding: 4px 8px;
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 4px;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  cursor: pointer;
+}
+
+#session-select:focus {
+  outline: none;
+  border-color: var(--vscode-focusBorder);
+}
+
+#new-session,
+#rename-session,
+#delete-session {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background-color: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+#new-session:hover,
+#rename-session:hover,
+#delete-session:hover {
+  background-color: var(--vscode-button-hoverBackground);
+}
+
+#new-session:active,
+#rename-session:active,
+#delete-session:active {
+  transform: scale(0.95);
+}
+
 #messages {
   flex: 1;
   overflow-y: auto;

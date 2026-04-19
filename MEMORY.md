@@ -20,6 +20,13 @@
 | 0.1.1 | 2026-04-14 | 当前版本 |
 | 0.1.2 | 待定 | 下次打包 |
 
+## 关键决策
+- 多会话状态存储在工作区 `.openclaw/sessions.json`，按项目隔离
+- Webview 会话 UI 的初始化必须在前端 `message` 监听器注册完成后再发送 `ready`
+- `occ.chatView` 需要启用 `retainContextWhenHidden: true`，避免侧边栏切走再回来时下拉状态丢失
+- 新会话名称采用首条用户消息自动摘要，旧会话名称不迁移，手动改名优先级最高
+- Webview 中不再使用原生 `confirm`/`prompt` 做会话删除和重命名，统一改为扩展侧原生确认与输入框
+
 ## 工作目录规范
 
 ### 📁 openclaw-code 是标准 OpenClaw 工作区
