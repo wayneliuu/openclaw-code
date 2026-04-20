@@ -119,10 +119,51 @@ body {
   margin-left: 0;
 }
 
+.message.assistant.responding {
+  position: relative;
+  padding-right: 88px;
+}
+
+.message.assistant.responding::after {
+  content: '处理中...';
+  position: absolute;
+  top: 9px;
+  right: 28px;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--vscode-descriptionForeground);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.message.assistant.responding::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  right: 10px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--vscode-panel-border);
+  border-top-color: var(--vscode-progressBar-background, var(--vscode-focusBorder));
+  border-radius: 50%;
+  animation: occ-spinner-rotate 0.8s linear infinite;
+  pointer-events: none;
+}
+
 .message.error {
   background-color: var(--vscode-inputValidation-errorBackground);
   border-left: 3px solid var(--vscode-inputValidation-errorBorder);
   color: var(--vscode-errorForeground);
+}
+
+@keyframes occ-spinner-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .message pre {

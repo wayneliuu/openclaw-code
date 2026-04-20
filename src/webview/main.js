@@ -264,6 +264,28 @@
     vscode.postMessage({ type: 'sendMessage', text });
   }
 
+  function getCurrentAssistantMessage(createIfMissing = false) {
+    let lastMsg = messagesDiv.querySelector('.message.assistant:last-child');
+
+    if (!lastMsg && createIfMissing) {
+      lastMsg = document.createElement('div');
+      lastMsg.className = 'message assistant';
+      messagesDiv.appendChild(lastMsg);
+    }
+
+    return lastMsg;
+  }
+
+  function setAssistantResponding(active) {
+    const assistantMessage = getCurrentAssistantMessage(active);
+    if (!assistantMessage) {
+      return;
+    }
+
+    assistantMessage.classList.toggle('responding', active);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+
   function getSelectedSessionId() {
     return sessionSelect.value || activeSessionId;
   }
@@ -345,6 +367,7 @@
         isResponding = true;
         currentMessage = '';
         currentResponseNotices = [];
+        setAssistantResponding(true);
         sendBtn.disabled = true;
         sendBtn.style.opacity = '0.5';
         break;
@@ -366,18 +389,21 @@
 
       case 'endResponse':
         isResponding = false;
+        setAssistantResponding(false);
         sendBtn.disabled = false;
         sendBtn.style.opacity = '1';
         break;
 
       case 'error':
         isResponding = false;
+        setAssistantResponding(false);
         sendBtn.disabled = false;
         sendBtn.style.opacity = '1';
         addMessage('error', `Error: ${message.data}`);
         break;
 
       case 'clearChat':
+        setAssistantResponding(false);
         messagesDiv.innerHTML = '';
         break;
 
@@ -476,15 +502,10 @@
   }
 
   function updateAssistantMessage(content) {
-    let lastMsg = messagesDiv.querySelector('.message.assistant:last-child');
-
-    if (!lastMsg) {
-      lastMsg = document.createElement('div');
-      lastMsg.className = 'message assistant';
-      messagesDiv.appendChild(lastMsg);
-    }
+    const lastMsg = getCurrentAssistantMessage(true);
 
     lastMsg.innerHTML = marked.parse(content);
+    lastMsg.classList.toggle('responding', isResponding);
     enhanceRenderedMessage(lastMsg);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   }
