@@ -122,15 +122,17 @@ body {
 .message.assistant.responding {
   position: relative;
   padding-right: 88px;
+  --responding-indicator-top: 10px;
+  --responding-indicator-size: 12px;
 }
 
 .message.assistant.responding::after {
   content: '处理中...';
   position: absolute;
-  top: 9px;
+  top: var(--responding-indicator-top);
   right: 28px;
   font-size: 11px;
-  line-height: 1;
+  line-height: var(--responding-indicator-size);
   color: var(--vscode-descriptionForeground);
   white-space: nowrap;
   pointer-events: none;
@@ -139,10 +141,10 @@ body {
 .message.assistant.responding::before {
   content: '';
   position: absolute;
-  top: 12px;
+  top: var(--responding-indicator-top);
   right: 10px;
-  width: 12px;
-  height: 12px;
+  width: var(--responding-indicator-size);
+  height: var(--responding-indicator-size);
   border: 2px solid var(--vscode-panel-border);
   border-top-color: var(--vscode-progressBar-background, var(--vscode-focusBorder));
   border-radius: 50%;
