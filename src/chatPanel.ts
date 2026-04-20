@@ -1,9 +1,10 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { OpenClawClient } from './openclawClient';
+import { OpenClawClient, OpenClawRequestOptions, OpenClawStreamEvent, OpenClawUsage } from './openclawClient';
 import { SessionManager, ChatMessage, Session } from './sessionManager';
 
 export class ChatPanelProvider implements vscode.WebviewViewProvider {
+  private static readonly MESSAGE_CHANNEL = 'occ-vscode';
   private view?: vscode.WebviewView;
   private client: OpenClawClient;
   private sessionManager?: SessionManager;
@@ -249,6 +250,84 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
     return session ? session.messages : [];
   }
 
+  private getOpenClawRequestOptions(): OpenClawRequestOptions {
+    return {
+      messageChannel: ChatPanelProvider.MESSAGE_CHANNEL,
+      sessionKey: undefined,
+      user: undefined,
+      agentId: undefined,
+    };
+  }
+
+  private appendUniqueNotice(notices: string[], notice: string): boolean {
+    const trimmedNotice = notice.trim();
+    if (!trimmedNotice || notices.includes(trimmedNotice)) {
+      return false;
+    }
+
+    notices.push(trimmedNotice);
+    return true;
+  }
+
+  private formatUsage(usage: OpenClawUsage): string {
+    const parts: string[] = [];
+
+    if (usage.inputTokens !== undefined) {
+      parts.push(`input ${usage.inputTokens}`);
+    }
+
+    if (usage.outputTokens !== undefined) {
+      parts.push(`output ${usage.outputTokens}`);
+    }
+
+    if (usage.totalTokens !== undefined) {
+      parts.push(`total ${usage.totalTokens}`);
+    }
+
+    return parts.length > 0 ? `Usage: ${parts.join(' · ')}` : 'Usage available';
+  }
+
+  private composeAssistantContent(text: string, notices: string[]): string {
+    const trimmedText = text.trim();
+    const normalizedNotices = notices.map(notice => notice.trim()).filter(Boolean);
+
+    if (trimmedText && normalizedNotices.length > 0) {
+      return `${trimmedText}\n\n---\n\n${normalizedNotices.join('\n\n')}`;
+    }
+
+    if (trimmedText) {
+      return trimmedText;
+    }
+
+    return normalizedNotices.join('\n\n');
+  }
+
+  private handleStreamEvent(
+    streamEvent: OpenClawStreamEvent,
+    assistantState: { text: string; persistentNotices: string[] }
+  ) {
+    switch (streamEvent.type) {
+      case 'text-delta':
+        assistantState.text += streamEvent.text;
+        this.view?.webview.postMessage({ type: 'chunk', data: streamEvent.text });
+        break;
+
+      case 'status':
+        if (streamEvent.persist) {
+          this.appendUniqueNotice(assistantState.persistentNotices, streamEvent.text);
+        }
+        this.view?.webview.postMessage({ type: 'responseStatus', data: streamEvent.text });
+        break;
+
+      case 'usage':
+        this.view?.webview.postMessage({ type: 'responseUsage', data: this.formatUsage(streamEvent.usage) });
+        break;
+
+      case 'transport':
+        break;
+    }
+  }
+
   private updateCurrentMessages(messages: ChatMessage[]) {
     if (!this.sessionManager) {
       return;
@@ -405,31 +484,31 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
 
     this.view.webview.postMessage({ type: 'startResponse' });
 
-    let assistantMessage = '';
+    const assistantState = {
+      text: '',
+      persistentNotices: [] as string[]
+    };
+    let assistantMessageSaved = false;
 
     try {
+      const requestOptions = this.getOpenClawRequestOptions();
+
       await this.client.sendMessageWithHistory(
         conversationHistory,
         token,
-        (chunk: string) => {
-          assistantMessage += chunk;
-          this.view?.webview.postMessage({ type: 'chunk', data: chunk });
+        (streamEvent: OpenClawStreamEvent) => {
+          this.handleStreamEvent(streamEvent, assistantState);
         },
-        (error: Error) => {
-          this.view?.webview.postMessage({ 
-            type: 'error', 
-            data: error.message 
-          });
-          vscode.window.showErrorMessage(`OpenClaw error: ${error.message}`);
-        }
+        undefined,
+        requestOptions
       );
 
-      if (assistantMessage) {
-        conversationHistory.push({ role: 'assistant', content: assistantMessage });
+      const assistantContent = this.composeAssistantContent(assistantState.text, assistantState.persistentNotices);
+      if (assistantContent) {
+        conversationHistory.push({ role: 'assistant', content: assistantContent });
         this.updateCurrentMessages(conversationHistory);
+        assistantMessageSaved = true;
       }
-
-      this.view.webview.postMessage({ type: 'endResponse' });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.view.webview.postMessage({ 
@@ -437,6 +516,14 @@ export class ChatPanelProvider implements vscode.WebviewViewProvider {
         data: errorMessage 
       });
       vscode.window.showErrorMessage(`OpenClaw error: ${errorMessage}`);
+    } finally {
+      const assistantContent = this.composeAssistantContent(assistantState.text, assistantState.persistentNotices);
+      if (assistantContent && !assistantMessageSaved) {
+        conversationHistory.push({ role: 'assistant', content: assistantContent });
+        this.updateCurrentMessages(conversationHistory);
+      }
+
+      this.view.webview.postMessage({ type: 'endResponse' });
     }
   }
 

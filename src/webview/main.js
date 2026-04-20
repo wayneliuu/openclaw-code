@@ -16,11 +16,36 @@
   let fileIndex = new Map();
   let sessions = [];
   let activeSessionId = '';
+  let currentResponseNotices = [];
 
   function autoResizeInput() {
     input.style.height = 'auto';
     const newHeight = Math.min(Math.max(input.scrollHeight, 60), 300);
     input.style.height = newHeight + 'px';
+  }
+
+  function appendUniqueNotice(notice) {
+    const trimmedNotice = String(notice || '').trim();
+    if (!trimmedNotice || currentResponseNotices.includes(trimmedNotice)) {
+      return;
+    }
+
+    currentResponseNotices.push(trimmedNotice);
+  }
+
+  function composeAssistantDisplayContent() {
+    const trimmedMessage = currentMessage.trim();
+    const notices = currentResponseNotices.map(notice => notice.trim()).filter(Boolean);
+
+    if (trimmedMessage && notices.length > 0) {
+      return `${trimmedMessage}\n\n---\n\n${notices.join('\n\n')}`;
+    }
+
+    if (trimmedMessage) {
+      return trimmedMessage;
+    }
+
+    return notices.join('\n\n');
   }
 
   function buildFileIndex() {
@@ -319,13 +344,24 @@
       case 'startResponse':
         isResponding = true;
         currentMessage = '';
+        currentResponseNotices = [];
         sendBtn.disabled = true;
         sendBtn.style.opacity = '0.5';
         break;
 
       case 'chunk':
         currentMessage += message.data;
-        updateAssistantMessage(currentMessage);
+        updateAssistantMessage(composeAssistantDisplayContent());
+        break;
+
+      case 'responseStatus':
+        appendUniqueNotice(message.data);
+        updateAssistantMessage(composeAssistantDisplayContent());
+        break;
+
+      case 'responseUsage':
+        appendUniqueNotice(message.data);
+        updateAssistantMessage(composeAssistantDisplayContent());
         break;
 
       case 'endResponse':
