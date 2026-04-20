@@ -49,3 +49,8 @@
 
 ---
 *最后更新：2026-04-18*
+
+## Promoted From Short-Term Memory (2026-04-20)
+
+<!-- openclaw-memory-promotion:memory:memory/2026-04-14.md:18:18 -->
+- *记录时间：2026-04-14* [score=0.808 recalls=0 avg=0.620 source=memory/2026-04-14.md:18-18]
