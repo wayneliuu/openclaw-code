@@ -16,6 +16,9 @@ export interface OpenClawRequestOptions {
   messageChannel?: string;
   sessionKey?: string;
   user?: string;
+  instructions?: string;
+  maxOutputTokens?: number;
+  previousResponseId?: string;
 }
 
 export interface OpenClawUsage {
@@ -44,7 +47,11 @@ interface ResponsesInputItem {
 }
 
 class OpenClawHttpError extends Error {
-  constructor(public readonly status: number, message: string) {
+  constructor(
+    public readonly status: number,
+    message: string,
+    public readonly errorType?: string
+  ) {
     super(message);
     this.name = 'OpenClawHttpError';
   }
@@ -59,6 +66,7 @@ export class OpenClawClient {
 
   private buildHeaders(token: string, options?: OpenClawRequestOptions): Record<string, string> {
     const headers: Record<string, string> = {
+      'Accept': 'text/event-stream, application/json',
       'Content-Type': 'application/json',
     };
 
@@ -79,6 +87,34 @@ export class OpenClawClient {
     }
 
     return headers;
+  }
+
+  private buildResponsesRequestBody(messages: ChatMessage[], options?: OpenClawRequestOptions): JsonRecord {
+    const body: JsonRecord = {
+      model: 'openclaw/default',
+      input: this.toResponsesInput(messages),
+      stream: true,
+    };
+
+    if (options?.user) {
+      body.user = options.user;
+    }
+
+    const instructions = options?.instructions?.trim();
+    if (instructions) {
+      body.instructions = instructions;
+    }
+
+    if (typeof options?.maxOutputTokens === 'number' && Number.isFinite(options.maxOutputTokens) && options.maxOutputTokens > 0) {
+      body.max_output_tokens = Math.floor(options.maxOutputTokens);
+    }
+
+    const previousResponseId = options?.previousResponseId?.trim();
+    if (previousResponseId) {
+      body.previous_response_id = previousResponseId;
+    }
+
+    return body;
   }
 
   private toResponsesInput(messages: ChatMessage[]): ResponsesInputItem[] {
@@ -129,13 +165,15 @@ export class OpenClawClient {
 
   private async createHttpError(response: Response): Promise<OpenClawHttpError> {
     let message = `HTTP ${response.status}: ${response.statusText}`;
+    let errorType: string | undefined;
 
     try {
       const rawText = await response.text();
       if (rawText) {
         try {
-          const parsed = JSON.parse(rawText) as { error?: { message?: string } };
+          const parsed = JSON.parse(rawText) as { error?: { message?: string; type?: string } };
           const errorMessage = parsed.error?.message?.trim();
+          errorType = parsed.error?.type?.trim();
           if (errorMessage) {
             message = `HTTP ${response.status}: ${errorMessage}`;
           }
@@ -144,10 +182,10 @@ export class OpenClawClient {
         }
       }
     } catch {
-      return new OpenClawHttpError(response.status, message);
+      return new OpenClawHttpError(response.status, message, errorType);
     }
 
-    return new OpenClawHttpError(response.status, message);
+    return new OpenClawHttpError(response.status, message, errorType);
   }
 
   private async streamSse(
@@ -353,6 +391,34 @@ export class OpenClawClient {
       ?? this.extractNotableSummary(payload);
   }
 
+  private isResponsesUnsupportedBadRequest(error: OpenClawHttpError): boolean {
+    if (error.status !== 400) {
+      return false;
+    }
+
+    if (error.errorType && error.errorType !== 'invalid_request_error') {
+      return false;
+    }
+
+    const message = error.message.toLowerCase();
+    const fallbackPatterns = [
+      /responses endpoint .*disabled/,
+      /responses endpoint .*not enabled/,
+      /\bv1\/responses\b.*not found/,
+      /does not support .*responses/,
+      /unsupported .*responses/,
+      /unknown field .*input/,
+      /unknown parameter .*input/,
+      /unrecognized field .*input/,
+      /invalid field .*input/,
+      /missing .*messages/,
+      /messages .*required/,
+      /expected .*messages/
+    ];
+
+    return fallbackPatterns.some((pattern) => pattern.test(message));
+  }
+
   private processChatCompletionEvent(
     event: ParsedSseEvent,
     onEvent: (streamEvent: OpenClawStreamEvent) => void
@@ -405,6 +471,13 @@ export class OpenClawClient {
         onEvent({ type: 'transport', transport: 'responses' });
         return false;
 
+      case 'response.in_progress':
+      case 'response.output_item.added':
+      case 'response.content_part.added':
+      case 'response.output_text.done':
+      case 'response.content_part.done':
+        return false;
+
       case 'response.output_text.delta': {
         const text = this.extractResponsesTextDelta(payload);
         if (text) {
@@ -453,12 +526,7 @@ export class OpenClawClient {
     const response = await fetch(`${this.baseUrl}/v1/responses`, {
       method: 'POST',
       headers: this.buildHeaders(token, options),
-      body: JSON.stringify({
-        model: 'openclaw/default',
-        input: this.toResponsesInput(messages),
-        stream: true,
-        user: options?.user,
-      }),
+      body: JSON.stringify(this.buildResponsesRequestBody(messages, options)),
     });
 
     if (!response.ok) {
@@ -497,7 +565,7 @@ export class OpenClawClient {
       return true;
     }
 
-    return error.status === 400 && /(responses|input|unsupported|invalid_request_error)/i.test(error.message);
+    return this.isResponsesUnsupportedBadRequest(error);
   }
 
   async sendMessageWithHistory(

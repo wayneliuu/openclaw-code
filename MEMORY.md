@@ -26,6 +26,8 @@
 - `occ.chatView` 需要启用 `retainContextWhenHidden: true`，避免侧边栏切走再回来时下拉状态丢失
 - 新会话名称采用首条用户消息自动摘要，旧会话名称不迁移，手动改名优先级最高
 - Webview 中不再使用原生 `confirm`/`prompt` 做会话删除和重命名，统一改为扩展侧原生确认与输入框
+- OCC 的 `/v1/responses` fallback 只应在端点不存在、方法不支持或请求形状明显不兼容旧 Gateway 时触发，不能把泛化的 `400 invalid_request_error` 静默吞成 `/v1/chat/completions` 回退
+- OCC 当前对 OpenResponses 的轻量扩展范围仅包含 `instructions`、`max_output_tokens`、`previous_response_id` 和更多 SSE 生命周期事件识别，不在这一轮接入 `tools`、`function_call_output`、文件或图片输入
 
 ## 工作目录规范
 

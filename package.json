@@ -2,7 +2,7 @@
   "name": "openclaw-code",
   "displayName": "OpenClaw Code (OCC)",
   "description": "OpenClaw AI chat assistant for VSCode/Windsurf",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "publisher": "openclaw",
   "repository": {
     "type": "git",
@@ -94,6 +94,5 @@
     "@types/vscode": "^1.75.0",
     "@vscode/vsce": "^2.19.0",
     "typescript": "^5.0.0"
-  },
-  "dependencies": {}
+  }
 }
