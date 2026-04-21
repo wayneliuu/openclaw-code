@@ -1,23 +1,17 @@
 #!/bin/bash
 # vsix-package 打包脚本
 # 工作目录：/Users/lw/ai/openclaw-code
+# 版本号唯一来源：package.json
 
 set -e
 
 WORKDIR="/Users/lw/ai/openclaw-code"
-VERSION_FILE="$WORKDIR/.version"
 PKG_NAME="openclaw-code"
 
 cd "$WORKDIR"
 
-# 检查 version 文件
-if [ ! -f "$VERSION_FILE" ]; then
-    echo "📝 未找到版本文件，创建初始版本 0.1.0"
-    echo "0.1.0" > "$VERSION_FILE"
-fi
-
-# 读取当前版本
-CURRENT_VERSION=$(cat "$VERSION_FILE" | tr -d '\n\r ')
+# 从 package.json 读取当前版本
+CURRENT_VERSION=$(node -p "require('./package.json').version")
 echo "📌 当前版本: $CURRENT_VERSION"
 
 # 解析版本号
@@ -45,11 +39,11 @@ else
     NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
 fi
 
-# 更新版本文件
-echo "$NEW_VERSION" > "$VERSION_FILE"
+# 更新 package.json 中的版本号
+node -e "const pkg=require('./package.json'); pkg.version='$NEW_VERSION'; require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2) + '\n');"
 echo "✅ 版本已更新: $CURRENT_VERSION → $NEW_VERSION"
 
-# 确保 vsce 可用（通过 npx 或直接路径）
+# 确保 vsce 可用
 VSCMD="$(pwd)/node_modules/.bin/vsce"
 if [ ! -x "$VSCMD" ]; then
     VSCMD="vsce"
